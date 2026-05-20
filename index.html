@@ -526,11 +526,11 @@
             }
 
             var buildUrl = "Build";
-            var loaderUrl = buildUrl + "/f3d6c4a3963e255b7c03ee222a43af5d.loader.js?v=1779305503590";
+            var loaderUrl = buildUrl + "/f3d6c4a3963e255b7c03ee222a43af5d.loader.js?v=1779308869863";
             var config = {
-                dataUrl: buildUrl + "/f53ac48bc75ec18619d9f3098fb93884.data?v=1779305503590",
-                frameworkUrl: buildUrl + "/21ea2faae5acb6c991a50304975d42b9.framework.js?v=1779305503590",
-                codeUrl: buildUrl + "/53eee6c6551c16d842e3faaf68dbc44f.wasm?v=1779305503590",
+                dataUrl: buildUrl + "/f53ac48bc75ec18619d9f3098fb93884.data?v=1779308869863",
+                frameworkUrl: buildUrl + "/21ea2faae5acb6c991a50304975d42b9.framework.js?v=1779308869863",
+                codeUrl: buildUrl + "/53eee6c6551c16d842e3faaf68dbc44f.wasm?v=1779308869863",
                 streamingAssetsUrl: "StreamingAssets",
                 companyName: "spacedolphin",
                 productName: "Spacedolphin's U3d Gym",
@@ -559,6 +559,12 @@
                     if (progress === 0.5) gtag('event', 'unity_load_50_percent', { creator_name: environment.creatorUsername || 'platform', project_name: environment.projectName || 'main' });
                 }).then((instance) => {
                     unityInstance = instance;
+                    // Expose to window so external scripts (.jslib SendMessage paths,
+                    // server-injected paypal-bridge.js, profile-bridge.js) can call
+                    // SendMessage. The local 'unityInstance' var continues to serve
+                    // in-template references; window.unityInstance is the cross-script
+                    // handoff point.
+                    window.unityInstance = instance;
                     hideLoadingScreen();
                     if (window._pendingPhotonToken) {
                         unityInstance.SendMessage('U3D_FirebaseIntegration', 'OnPhotonTokenReceived', window._pendingPhotonToken);
