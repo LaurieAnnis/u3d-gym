@@ -526,11 +526,11 @@
             }
 
             var buildUrl = "Build";
-            var loaderUrl = buildUrl + "/0380a93a5dd74c2ff4b3a5e5b502f5da.loader.js?v=1780194645775";
+            var loaderUrl = buildUrl + "/0380a93a5dd74c2ff4b3a5e5b502f5da.loader.js?v=1780200652711";
             var config = {
-                dataUrl: buildUrl + "/2f6ddcef5f76b623f4b5d2a70d114c69.data?v=1780194645775",
-                frameworkUrl: buildUrl + "/9da03e5d47cabf0e4fdbde28788e9d60.framework.js?v=1780194645775",
-                codeUrl: buildUrl + "/8d4ac2138e399f294ad748e973a9539f.wasm?v=1780194645775",
+                dataUrl: buildUrl + "/e431a656ecd884e59b662564809c528d.data?v=1780200652711",
+                frameworkUrl: buildUrl + "/9da03e5d47cabf0e4fdbde28788e9d60.framework.js?v=1780200652711",
+                codeUrl: buildUrl + "/8d4ac2138e399f294ad748e973a9539f.wasm?v=1780200652711",
                 streamingAssetsUrl: "StreamingAssets",
                 companyName: "spacedolphin",
                 productName: "Spacedolphin's U3d Gym",
@@ -543,12 +543,9 @@
                 }
             };
 
+            canvas.style.width = "100vw"; canvas.style.height = "100vh";
             if (_isMobileDevice) {
                 config.devicePixelRatio = 1;
-                unityShowBanner('WebGL builds are not supported on mobile devices.', 'warning');
-                gtag('event', 'mobile_access_attempt', { device_type: 'mobile', creator_name: environment.creatorUsername || 'platform', project_name: environment.projectName || 'main' });
-            } else {
-                canvas.style.width = "100vw"; canvas.style.height = "100vh";
             }
 
             var script = document.createElement("script");
