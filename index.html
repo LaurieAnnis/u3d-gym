@@ -730,11 +730,11 @@
             }
  
             var buildUrl = "Build";
-            var loaderUrl = buildUrl + "/c1651c98f57dd9a8a4e09a4f248558a6.loader.js?v=1780339158528";
+            var loaderUrl = buildUrl + "/c1651c98f57dd9a8a4e09a4f248558a6.loader.js?v=1780339909488";
             var config = {
-                dataUrl: buildUrl + "/1ad1c44bcd28bb599106025f145e3dc2.data?v=1780339158528",
-                frameworkUrl: buildUrl + "/9da03e5d47cabf0e4fdbde28788e9d60.framework.js?v=1780339158528",
-                codeUrl: buildUrl + "/6f815f60747e1de1284eda3b51bf09a0.wasm?v=1780339158528",
+                dataUrl: buildUrl + "/1ad1c44bcd28bb599106025f145e3dc2.data?v=1780339909488",
+                frameworkUrl: buildUrl + "/9da03e5d47cabf0e4fdbde28788e9d60.framework.js?v=1780339909488",
+                codeUrl: buildUrl + "/6f815f60747e1de1284eda3b51bf09a0.wasm?v=1780339909488",
                 streamingAssetsUrl: "StreamingAssets",
                 companyName: "spacedolphin",
                 productName: "Spacedolphin's U3d Gym",
@@ -845,18 +845,12 @@
                 var vv = window.visualViewport || {};
                 box.style.display = 'block';
                 box.textContent =
-                    'win.inner   ' + window.innerWidth + ' x ' + window.innerHeight + '
-' +
-                    'doc.client  ' + document.documentElement.clientWidth + ' x ' + document.documentElement.clientHeight + '
-' +
-                    'visualVP    ' + Math.round(vv.width || 0) + ' x ' + Math.round(vv.height || 0) + '
-' +
-                    'container   ' + (cont ? cont.clientWidth + ' x ' + cont.clientHeight : 'n/a') + '
-' +
-                    'canvas.cli  ' + (c ? c.clientWidth + ' x ' + c.clientHeight : 'n/a') + '
-' +
-                    'canvas.buf  ' + (c ? c.width + ' x ' + c.height : 'n/a') + '
-' +
+                    'win.inner   ' + window.innerWidth + ' x ' + window.innerHeight + '\n' +
+                    'doc.client  ' + document.documentElement.clientWidth + ' x ' + document.documentElement.clientHeight + '\n' +
+                    'visualVP    ' + Math.round(vv.width || 0) + ' x ' + Math.round(vv.height || 0) + '\n' +
+                    'container   ' + (cont ? cont.clientWidth + ' x ' + cont.clientHeight : 'n/a') + '\n' +
+                    'canvas.cli  ' + (c ? c.clientWidth + ' x ' + c.clientHeight : 'n/a') + '\n' +
+                    'canvas.buf  ' + (c ? c.width + ' x ' + c.height : 'n/a') + '\n' +
                     'dpr ' + (window.devicePixelRatio || 1) + '  renderDpr ' + _renderDpr;
             }
             ['resize', 'orientationchange'].forEach(function (e) { window.addEventListener(e, function () { setTimeout(update, 350); }); });
