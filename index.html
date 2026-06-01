@@ -4,7 +4,6 @@
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>Spacedolphin's U3d Gym</title>
-    <!-- ++ FULLSCREEN: viewport-fit=cover lets the canvas extend into the iOS safe areas -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, shrink-to-fit=no, viewport-fit=cover">
     <link rel="icon" type="image/x-icon" href="https://unreality3d.com/favicon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="https://unreality3d.com/favicon-32x32.png">
@@ -156,7 +155,8 @@
  
         /* ── Unity Canvas ────────────────────────────── */
         #unity-container { position: fixed; inset: 0; background: #0f172a; }
-        #unity-canvas { display: block; width: 100vw; height: 100vh; background: #0f172a; cursor: default; }
+        /* ++ FILL: 100% of the inset:0 container, not 100vh (iOS shorts vh in portrait) */
+        #unity-canvas { display: block; width: 100%; height: 100%; background: #0f172a; cursor: default; }
         #unity-warning {
             position: fixed; top: 0; left: 50%; transform: translateX(-50%);
             z-index: 8000; max-width: 600px; width: 90%;
@@ -165,7 +165,7 @@
         /* ── VR Button ───────────────────────────────── */
         #webxr-button-container {
             position: fixed;
-            /* ++ FULLSCREEN: keep clear of the notch / home indicator in full-bleed mode */
+            /* keep clear of the notch / home indicator in full-bleed mode */
             bottom: max(20px, env(safe-area-inset-bottom)); right: max(20px, env(safe-area-inset-right));
             z-index: 2000; display: none;
             opacity: 1; transition: opacity 0.6s ease;
@@ -201,7 +201,7 @@
         /* PWA: Full Screen button (mobile only) ─────── */
         #fullscreen-install-button {
             position: fixed;
-            /* ++ FULLSCREEN: keep clear of the notch / home indicator in full-bleed mode */
+            /* keep clear of the notch / home indicator in full-bleed mode */
             bottom: max(20px, env(safe-area-inset-bottom)); left: max(20px, env(safe-area-inset-left));
             z-index: 2000;
             display: none;                 /* shown after load on mobile via JS */
@@ -435,10 +435,22 @@
         var _isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         var _isIOSDevice = /iPhone|iPad|iPod/i.test(navigator.userAgent);
  
-        // ++ RES: render density. Phones report 2x–3x; cap mobile at 2x so the GPU
-        // isn't rendering a heavy 3D scene at full 3x (perf + crash risk) while still
+        // Render density. Phones report 2x–3x; cap mobile at 2x so the GPU isn't
+        // rendering a heavy 3D scene at full 3x (perf + crash risk) while still
         // being far sharper than the old hard 1x. Desktop uses its real density.
         var _renderDpr = _isMobileDevice ? Math.min(window.devicePixelRatio || 1, 2) : (window.devicePixelRatio || 1);
+ 
+        // ++ FILL: size the draw buffer from the canvas's ACTUAL on-screen size ×
+        // density. clientWidth/Height reflect the canvas filling its full-screen
+        // inset:0 container, so this is correct even where iOS reports a short
+        // window.innerHeight in portrait standalone (the old innerHeight sizing
+        // left a navy bar at the bottom and would squish the view).
+        function resizeCanvas() {
+            var c = document.querySelector('#unity-canvas');
+            if (!c) return;
+            c.width = Math.round(c.clientWidth * _renderDpr);
+            c.height = Math.round(c.clientHeight * _renderDpr);
+        }
  
         // ── WebXR / VR ────────────────────────────────
         let xrSession = null, isVRSupported = false;
@@ -716,11 +728,11 @@
             }
  
             var buildUrl = "Build";
-            var loaderUrl = buildUrl + "/c1651c98f57dd9a8a4e09a4f248558a6.loader.js?v=1780286508267";
+            var loaderUrl = buildUrl + "/c1651c98f57dd9a8a4e09a4f248558a6.loader.js?v=1780293474290";
             var config = {
-                dataUrl: buildUrl + "/ebec3cdafb5c6ea64b9712c85048349a.data?v=1780286508267",
-                frameworkUrl: buildUrl + "/9da03e5d47cabf0e4fdbde28788e9d60.framework.js?v=1780286508267",
-                codeUrl: buildUrl + "/6f815f60747e1de1284eda3b51bf09a0.wasm?v=1780286508267",
+                dataUrl: buildUrl + "/d38bd556a7c36fbb33bca9d42ff661ca.data?v=1780293474290",
+                frameworkUrl: buildUrl + "/9da03e5d47cabf0e4fdbde28788e9d60.framework.js?v=1780293474290",
+                codeUrl: buildUrl + "/6f815f60747e1de1284eda3b51bf09a0.wasm?v=1780293474290",
                 streamingAssetsUrl: "StreamingAssets",
                 companyName: "spacedolphin",
                 productName: "Spacedolphin's U3d Gym",
@@ -733,8 +745,9 @@
                 }
             };
  
-            canvas.style.width = "100vw"; canvas.style.height = "100vh";
-            config.devicePixelRatio = _renderDpr;   // ++ RES: was a hard 1x on mobile
+            // ++ FILL: canvas fills its inset:0 container (100%), not 100vw/100vh.
+            canvas.style.width = "100%"; canvas.style.height = "100%";
+            config.devicePixelRatio = _renderDpr;   // capped-2x on mobile, real density on desktop
  
             var script = document.createElement("script");
             script.src = loaderUrl;
@@ -767,6 +780,7 @@
                         unityInstance.SendMessage('U3D_FirebaseIntegration', 'OnPhotonTokenReceived', window._pendingPhotonToken);
                         window._pendingPhotonRoom = null; window._pendingPhotonContent = null; window._pendingPhotonToken = null;
                     }
+                    resizeCanvas();           // ++ FILL: match the draw buffer to the real on-screen size at load
                     checkVRSupport();
                     showFullscreenButton();   // PWA: reveal the mobile Full Screen button after load
                     gtag('event', 'unity_load_complete', { creator_name: environment.creatorUsername || 'platform', project_name: environment.projectName || 'main', load_time_ms: Date.now() - performance.timing.navigationStart });
@@ -780,13 +794,12 @@
         }
  
         ['resize', 'orientationchange'].forEach(evt => {
-            window.addEventListener(evt, () => {
+            window.addEventListener(evt, function () {
                 if (!unityInstance) return;
-                const c = document.querySelector('#unity-canvas');
-                // ++ RES: size the draw buffer at the chosen density (was CSS pixels,
-                // i.e. 1x, which re-blurred the canvas on every rotate).
-                c.width = Math.round(window.innerWidth * _renderDpr);
-                c.height = Math.round(window.innerHeight * _renderDpr);
+                resizeCanvas();
+                // ++ FILL: iOS reports stale dimensions immediately after a turn;
+                // re-apply once the new orientation settles.
+                setTimeout(function () { if (unityInstance) resizeCanvas(); }, 300);
             });
         });
  
