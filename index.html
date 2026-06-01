@@ -305,6 +305,8 @@
     <div id="unity-container">
         <canvas id="unity-canvas" tabindex="-1"></canvas>
         <div id="unity-warning"></div>
+        <!-- TEMP DIAGNOSTIC: installed-portrait only -->
+        <div id="u3d-diag" style="position:fixed; top:env(safe-area-inset-top,0); left:0; right:0; z-index:99999; display:none; background:rgba(0,0,0,0.82); color:#0f0; font:11px/1.4 monospace; padding:6px 8px; pointer-events:none; white-space:pre;"></div>
     </div>
  
     <!-- VR button -->
@@ -728,11 +730,11 @@
             }
  
             var buildUrl = "Build";
-            var loaderUrl = buildUrl + "/c1651c98f57dd9a8a4e09a4f248558a6.loader.js?v=1780333749139";
+            var loaderUrl = buildUrl + "/c1651c98f57dd9a8a4e09a4f248558a6.loader.js?v=1780339158528";
             var config = {
-                dataUrl: buildUrl + "/1ad1c44bcd28bb599106025f145e3dc2.data?v=1780333749139",
-                frameworkUrl: buildUrl + "/9da03e5d47cabf0e4fdbde28788e9d60.framework.js?v=1780333749139",
-                codeUrl: buildUrl + "/6f815f60747e1de1284eda3b51bf09a0.wasm?v=1780333749139",
+                dataUrl: buildUrl + "/1ad1c44bcd28bb599106025f145e3dc2.data?v=1780339158528",
+                frameworkUrl: buildUrl + "/9da03e5d47cabf0e4fdbde28788e9d60.framework.js?v=1780339158528",
+                codeUrl: buildUrl + "/6f815f60747e1de1284eda3b51bf09a0.wasm?v=1780339158528",
                 streamingAssetsUrl: "StreamingAssets",
                 companyName: "spacedolphin",
                 productName: "Spacedolphin's U3d Gym",
@@ -828,6 +830,40 @@
         });
  
         loadUnity();
+        // TEMP DIAGNOSTIC — installed-portrait only. Remove after reading.
+        (function u3dDiag() {
+            var box = document.getElementById('u3d-diag');
+            if (!box) return;
+            function isStandalone() {
+                return (window.matchMedia && (window.matchMedia('(display-mode: fullscreen)').matches || window.matchMedia('(display-mode: standalone)').matches)) || window.navigator.standalone === true;
+            }
+            function update() {
+                var portrait = window.matchMedia('(orientation: portrait)').matches;
+                if (!isStandalone() || !portrait) { box.style.display = 'none'; return; }
+                var c = document.querySelector('#unity-canvas');
+                var cont = document.querySelector('#unity-container');
+                var vv = window.visualViewport || {};
+                box.style.display = 'block';
+                box.textContent =
+                    'win.inner   ' + window.innerWidth + ' x ' + window.innerHeight + '
+' +
+                    'doc.client  ' + document.documentElement.clientWidth + ' x ' + document.documentElement.clientHeight + '
+' +
+                    'visualVP    ' + Math.round(vv.width || 0) + ' x ' + Math.round(vv.height || 0) + '
+' +
+                    'container   ' + (cont ? cont.clientWidth + ' x ' + cont.clientHeight : 'n/a') + '
+' +
+                    'canvas.cli  ' + (c ? c.clientWidth + ' x ' + c.clientHeight : 'n/a') + '
+' +
+                    'canvas.buf  ' + (c ? c.width + ' x ' + c.height : 'n/a') + '
+' +
+                    'dpr ' + (window.devicePixelRatio || 1) + '  renderDpr ' + _renderDpr;
+            }
+            ['resize', 'orientationchange'].forEach(function (e) { window.addEventListener(e, function () { setTimeout(update, 350); }); });
+            if (window.visualViewport) window.visualViewport.addEventListener('resize', update);
+            setTimeout(update, 600);
+            setTimeout(update, 1500);
+        })();
     </script>
 </body>
 </html>
