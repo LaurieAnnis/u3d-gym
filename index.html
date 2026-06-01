@@ -155,8 +155,14 @@
  
         /* ── Unity Canvas ────────────────────────────── */
         #unity-container { position: fixed; inset: 0; background: #0f172a; }
-        /* ++ FILL: 100% of the inset:0 container, not 100vh (iOS shorts vh in portrait) */
         #unity-canvas { display: block; width: 100%; height: 100%; background: #0f172a; cursor: default; }
+        /* ++ IOS-GAP: shrink the canvas off the bottom ONLY in iOS standalone portrait,
+           where the bottom safe-area inset reports 0 and the home-indicator strip
+           eats the bottom of the canvas. The class is added/removed by JS so it
+           never applies on desktop, in-browser, landscape, or Android. */
+        body.ios-standalone-portrait #unity-canvas {
+            height: calc(100% - 24px);
+        }
         #unity-warning {
             position: fixed; top: 0; left: 50%; transform: translateX(-50%);
             z-index: 8000; max-width: 600px; width: 90%;
@@ -437,16 +443,26 @@
         var _isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         var _isIOSDevice = /iPhone|iPad|iPod/i.test(navigator.userAgent);
  
-        // Render density. Phones report 2x–3x; cap mobile at 2x so the GPU isn't
+        // Render density. Phones report 2x–3x; cap mobile at 1.5x so the GPU isn't
         // rendering a heavy 3D scene at full 3x (perf + crash risk) while still
         // being far sharper than the old hard 1x. Desktop uses its real density.
         var _renderDpr = _isMobileDevice ? Math.min(window.devicePixelRatio || 1, 1.5) : (window.devicePixelRatio || 1);
  
+        // ++ IOS-GAP: detect the exact broken state — iOS, installed (standalone),
+        // portrait — and toggle the body class that shrinks the canvas off the
+        // bottom. Returns nothing on every other platform/orientation, so the
+        // compensation never applies to desktop, in-browser mobile, landscape,
+        // or Android. Called at load and on every resize/orientation change.
+        function applyIOSGapCompensation() {
+            var isStandalone = (window.matchMedia && (window.matchMedia('(display-mode: fullscreen)').matches || window.matchMedia('(display-mode: standalone)').matches)) || window.navigator.standalone === true;
+            var portrait = window.matchMedia('(orientation: portrait)').matches;
+            var apply = _isIOSDevice && isStandalone && portrait;
+            document.body.classList.toggle('ios-standalone-portrait', apply);
+        }
+ 
         // ++ FILL: size the draw buffer from the canvas's ACTUAL on-screen size ×
-        // density. clientWidth/Height reflect the canvas filling its full-screen
-        // inset:0 container, so this is correct even where iOS reports a short
-        // window.innerHeight in portrait standalone (the old innerHeight sizing
-        // left a navy bar at the bottom and would squish the view).
+        // density. clientWidth/Height reflect the canvas after the IOS-GAP class
+        // (if any) is applied, so the buffer always matches the visible element.
         function resizeCanvas() {
             var c = document.querySelector('#unity-canvas');
             if (!c) return;
@@ -595,15 +611,15 @@
                 // because Add to Home Screen is an iOS system action. No "Safari only"
                 // claim. The "View More" hint covers browsers that bury the action.
                 steps = [
-                    'Tap the Share button ' + shareIcon + ' — it’s in the toolbar, or on newer iPhones tap the ' + menuIcon + ' menu by the address bar first, then Share.',
-                    'In the list that opens, tap “Add to Home Screen”. If you don’t see it, scroll down or tap “View More”.',
-                    'Tap “Add”, then open it from the new icon to play full screen.'
+                    'Tap the Share button ' + shareIcon + ' \u2014 it\u2019s in the toolbar, or on newer iPhones tap the ' + menuIcon + ' menu by the address bar first, then Share.',
+                    'In the list that opens, tap \u201CAdd to Home Screen\u201D. If you don\u2019t see it, scroll down or tap \u201CView More\u201D.',
+                    'Tap \u201CAdd\u201D, then open it from the new icon to play full screen.'
                 ];
             } else {
                 // Android Chrome and other Chromium browsers.
                 steps = [
                     'Tap the ' + menuIcon + ' menu in the corner of the browser.',
-                    'Tap “Install app”, or “Add to Home screen” if that’s what you see.',
+                    'Tap \u201CInstall app\u201D, or \u201CAdd to Home screen\u201D if that\u2019s what you see.',
                     'Confirm, then open it from the new icon to play full screen.'
                 ];
             }
@@ -730,11 +746,11 @@
             }
  
             var buildUrl = "Build";
-            var loaderUrl = buildUrl + "/c1651c98f57dd9a8a4e09a4f248558a6.loader.js?v=1780339909488";
+            var loaderUrl = buildUrl + "/c1651c98f57dd9a8a4e09a4f248558a6.loader.js?v=1780345885717";
             var config = {
-                dataUrl: buildUrl + "/1ad1c44bcd28bb599106025f145e3dc2.data?v=1780339909488",
-                frameworkUrl: buildUrl + "/9da03e5d47cabf0e4fdbde28788e9d60.framework.js?v=1780339909488",
-                codeUrl: buildUrl + "/6f815f60747e1de1284eda3b51bf09a0.wasm?v=1780339909488",
+                dataUrl: buildUrl + "/1ad1c44bcd28bb599106025f145e3dc2.data?v=1780345885717",
+                frameworkUrl: buildUrl + "/9da03e5d47cabf0e4fdbde28788e9d60.framework.js?v=1780345885717",
+                codeUrl: buildUrl + "/6f815f60747e1de1284eda3b51bf09a0.wasm?v=1780345885717",
                 streamingAssetsUrl: "StreamingAssets",
                 companyName: "spacedolphin",
                 productName: "Spacedolphin's U3d Gym",
@@ -747,9 +763,11 @@
                 }
             };
  
-            // ++ FILL: canvas fills its inset:0 container (100%), not 100vw/100vh.
+            // ++ IOS-GAP: apply the compensation class BEFORE sizing the canvas so
+            // clientHeight already reflects the shrink when resizeCanvas() reads it.
+            applyIOSGapCompensation();
             canvas.style.width = "100%"; canvas.style.height = "100%";
-            config.devicePixelRatio = _renderDpr;   // capped-2x on mobile, real density on desktop
+            config.devicePixelRatio = _renderDpr;   // capped-1.5x on mobile, real density on desktop
  
             var script = document.createElement("script");
             script.src = loaderUrl;
@@ -782,9 +800,10 @@
                         unityInstance.SendMessage('U3D_FirebaseIntegration', 'OnPhotonTokenReceived', window._pendingPhotonToken);
                         window._pendingPhotonRoom = null; window._pendingPhotonContent = null; window._pendingPhotonToken = null;
                     }
-                    resizeCanvas();           // ++ FILL: match the draw buffer to the real on-screen size at load
+                    applyIOSGapCompensation();   // ++ IOS-GAP: re-assert after load before measuring
+                    resizeCanvas();              // ++ FILL: match the draw buffer to the real on-screen size at load
                     checkVRSupport();
-                    showFullscreenButton();   // PWA: reveal the mobile Full Screen button after load
+                    showFullscreenButton();      // PWA: reveal the mobile Full Screen button after load
                     gtag('event', 'unity_load_complete', { creator_name: environment.creatorUsername || 'platform', project_name: environment.projectName || 'main', load_time_ms: Date.now() - performance.timing.navigationStart });
                 }).catch((message) => { showErrorScreen(message); });
             };
@@ -798,10 +817,11 @@
         ['resize', 'orientationchange'].forEach(evt => {
             window.addEventListener(evt, function () {
                 if (!unityInstance) return;
+                applyIOSGapCompensation();   // ++ IOS-GAP: re-evaluate on rotate (portrait<->landscape toggles it)
                 resizeCanvas();
                 // ++ FILL: iOS reports stale dimensions immediately after a turn;
                 // re-apply once the new orientation settles.
-                setTimeout(function () { if (unityInstance) resizeCanvas(); }, 300);
+                setTimeout(function () { if (unityInstance) { applyIOSGapCompensation(); resizeCanvas(); } }, 300);
             });
         });
  
@@ -843,6 +863,7 @@
                 var c = document.querySelector('#unity-canvas');
                 var cont = document.querySelector('#unity-container');
                 var vv = window.visualViewport || {};
+                var r = c ? c.getBoundingClientRect() : null;
                 box.style.display = 'block';
                 box.textContent =
                     'win.inner   ' + window.innerWidth + ' x ' + window.innerHeight + '\n' +
@@ -850,8 +871,9 @@
                     'visualVP    ' + Math.round(vv.width || 0) + ' x ' + Math.round(vv.height || 0) + '\n' +
                     'container   ' + (cont ? cont.clientWidth + ' x ' + cont.clientHeight : 'n/a') + '\n' +
                     'canvas.cli  ' + (c ? c.clientWidth + ' x ' + c.clientHeight : 'n/a') + '\n' +
+                    'canvas.rect top ' + (r ? Math.round(r.top) : '-') + ' bot ' + (r ? Math.round(r.bottom) : '-') + ' h ' + (r ? Math.round(r.height) : '-') + '\n' +
                     'canvas.buf  ' + (c ? c.width + ' x ' + c.height : 'n/a') + '\n' +
-                    'dpr ' + (window.devicePixelRatio || 1) + '  renderDpr ' + _renderDpr;
+                    'gapClass ' + (document.body.classList.contains('ios-standalone-portrait') ? 'ON' : 'off') + '  dpr ' + (window.devicePixelRatio || 1) + '  renderDpr ' + _renderDpr;
             }
             ['resize', 'orientationchange'].forEach(function (e) { window.addEventListener(e, function () { setTimeout(update, 350); }); });
             if (window.visualViewport) window.visualViewport.addEventListener('resize', update);
