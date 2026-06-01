@@ -4,7 +4,8 @@
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>Spacedolphin's U3d Gym</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, shrink-to-fit=no">
+    <!-- ++ FULLSCREEN: viewport-fit=cover lets the canvas extend into the iOS safe areas -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, shrink-to-fit=no, viewport-fit=cover">
     <link rel="icon" type="image/x-icon" href="https://unreality3d.com/favicon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="https://unreality3d.com/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="https://unreality3d.com/favicon-16x16.png">
@@ -163,7 +164,10 @@
  
         /* ── VR Button ───────────────────────────────── */
         #webxr-button-container {
-            position: fixed; bottom: 20px; right: 20px; z-index: 2000; display: none;
+            position: fixed;
+            /* ++ FULLSCREEN: keep clear of the notch / home indicator in full-bleed mode */
+            bottom: max(20px, env(safe-area-inset-bottom)); right: max(20px, env(safe-area-inset-right));
+            z-index: 2000; display: none;
             opacity: 1; transition: opacity 0.6s ease;
         }
         #webxr-button-container.vr-faded { opacity: 0.15; }
@@ -196,7 +200,10 @@
  
         /* PWA: Full Screen button (mobile only) ─────── */
         #fullscreen-install-button {
-            position: fixed; bottom: 20px; left: 20px; z-index: 2000;
+            position: fixed;
+            /* ++ FULLSCREEN: keep clear of the notch / home indicator in full-bleed mode */
+            bottom: max(20px, env(safe-area-inset-bottom)); left: max(20px, env(safe-area-inset-left));
+            z-index: 2000;
             display: none;                 /* shown after load on mobile via JS */
             width: 44px; height: 44px;
             align-items: center; justify-content: center;
@@ -358,15 +365,14 @@
         environment.creatorPayPalEmail = 'laurie@unreality3d.com';
         let unityInstance = null;
  
-        // ++ FIX: Suppress the benign cross-origin "Script error." dialog.
+        // Suppress the benign cross-origin "Script error." dialog.
         // Browsers mask any error thrown by a cross-origin script (analytics, the
         // injected payment SDK, the WebXR runtime, etc.) as the generic string
         // "Script error." with no source and line 0. Unity's loader reacts to ANY
-        // uncaught error by popping its own alert ("An error occurred running the
-        // Unity content on this page... The error was: Script error."), which looks
-        // fatal even though the experience keeps running. We swallow ONLY that exact
-        // masked signature; every real, same-origin error carries a real message and
-        // line and still reaches Unity's alert untouched.
+        // uncaught error by popping its own alert, which looks fatal even though the
+        // experience keeps running. We swallow ONLY that exact masked signature;
+        // every real, same-origin error carries a real message and line and still
+        // reaches Unity's alert untouched.
         function _isMaskedCrossOriginError(message, source, lineno) {
             return message === 'Script error.' && !source && (!lineno || lineno === 0);
         }
@@ -428,6 +434,11 @@
         // ── Mobile / iOS Detection ────────────────────
         var _isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         var _isIOSDevice = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+ 
+        // ++ RES: render density. Phones report 2x–3x; cap mobile at 2x so the GPU
+        // isn't rendering a heavy 3D scene at full 3x (perf + crash risk) while still
+        // being far sharper than the old hard 1x. Desktop uses its real density.
+        var _renderDpr = _isMobileDevice ? Math.min(window.devicePixelRatio || 1, 2) : (window.devicePixelRatio || 1);
  
         // ── WebXR / VR ────────────────────────────────
         let xrSession = null, isVRSupported = false;
@@ -566,10 +577,9 @@
  
             let steps;
             if (_isIOSDevice) {
-                // ++ FIX: iOS Share-sheet flow works in any browser (Safari, Chrome,
-                // etc.) because Add to Home Screen is an iOS system action. No
-                // "Safari only" claim. The "View More" hint covers browsers that bury
-                // the action below the fold.
+                // iOS Share-sheet flow works in any browser (Safari, Chrome, etc.)
+                // because Add to Home Screen is an iOS system action. No "Safari only"
+                // claim. The "View More" hint covers browsers that bury the action.
                 steps = [
                     'Tap the Share button ' + shareIcon + ' — it’s in the toolbar, or on newer iPhones tap the ' + menuIcon + ' menu by the address bar first, then Share.',
                     'In the list that opens, tap “Add to Home Screen”. If you don’t see it, scroll down or tap “View More”.',
@@ -706,11 +716,11 @@
             }
  
             var buildUrl = "Build";
-            var loaderUrl = buildUrl + "/c1651c98f57dd9a8a4e09a4f248558a6.loader.js?v=1780272431800";
+            var loaderUrl = buildUrl + "/c1651c98f57dd9a8a4e09a4f248558a6.loader.js?v=1780286508267";
             var config = {
-                dataUrl: buildUrl + "/0cffc3cce3ababeaba4fe3eeb17ce422.data?v=1780272431800",
-                frameworkUrl: buildUrl + "/9da03e5d47cabf0e4fdbde28788e9d60.framework.js?v=1780272431800",
-                codeUrl: buildUrl + "/6f815f60747e1de1284eda3b51bf09a0.wasm?v=1780272431800",
+                dataUrl: buildUrl + "/ebec3cdafb5c6ea64b9712c85048349a.data?v=1780286508267",
+                frameworkUrl: buildUrl + "/9da03e5d47cabf0e4fdbde28788e9d60.framework.js?v=1780286508267",
+                codeUrl: buildUrl + "/6f815f60747e1de1284eda3b51bf09a0.wasm?v=1780286508267",
                 streamingAssetsUrl: "StreamingAssets",
                 companyName: "spacedolphin",
                 productName: "Spacedolphin's U3d Gym",
@@ -724,9 +734,7 @@
             };
  
             canvas.style.width = "100vw"; canvas.style.height = "100vh";
-            if (_isMobileDevice) {
-                config.devicePixelRatio = 1;
-            }
+            config.devicePixelRatio = _renderDpr;   // ++ RES: was a hard 1x on mobile
  
             var script = document.createElement("script");
             script.src = loaderUrl;
@@ -743,10 +751,10 @@
                     // handoff point.
                     window.unityInstance = instance;
  
-                    // ++ FIX: belt-and-suspenders — if Unity wired its error handler
-                    // via window.onerror rather than an event listener, wrap it so the
-                    // same masked cross-origin "Script error." is filtered. Real errors
-                    // pass straight through to Unity's handler.
+                    // Belt-and-suspenders: if Unity wired its error handler via
+                    // window.onerror rather than an event listener, wrap it so the
+                    // same masked cross-origin "Script error." is filtered. Real
+                    // errors pass straight through to Unity's handler.
                     var _unityOnError = window.onerror;
                     window.onerror = function (message, source, lineno, colno, error) {
                         if (_isMaskedCrossOriginError(message, source, lineno)) return true;
@@ -775,7 +783,10 @@
             window.addEventListener(evt, () => {
                 if (!unityInstance) return;
                 const c = document.querySelector('#unity-canvas');
-                c.width = window.innerWidth; c.height = window.innerHeight;
+                // ++ RES: size the draw buffer at the chosen density (was CSS pixels,
+                // i.e. 1x, which re-blurred the canvas on every rotate).
+                c.width = Math.round(window.innerWidth * _renderDpr);
+                c.height = Math.round(window.innerHeight * _renderDpr);
             });
         });
  
